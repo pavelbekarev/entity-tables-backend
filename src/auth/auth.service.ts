@@ -3,6 +3,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from 'src/prisma/prisma.service';
 import { SignInDTO } from './dto/SignInDTO';
 import { SignUpDTO } from './dto/SignUpDTO';
+import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class AuthService {
@@ -46,10 +47,14 @@ export class AuthService {
    */
   async signUp(userData: SignUpDTO) {
     try {
+      const hashedPassword = await this.cryptUserPasswordService(
+        userData.userPassword,
+      );
+
       const user = await this.prismaService.user.create({
         data: {
           login: userData.userLogin,
-          password: userData.userPassword,
+          password: hashedPassword,
           state: userData.state,
           lastName: userData.lastName,
           firstName: userData.firstName,
@@ -69,5 +74,10 @@ export class AuthService {
     } catch (e) {
       console.error(e);
     }
+  }
+
+  async cryptUserPasswordService(pass: string) {
+    const salt = await bcrypt.genSaltSync(10);
+    return await bcrypt.hashSync(pass, salt);
   }
 }
